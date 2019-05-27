@@ -9,12 +9,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Creates a CMK in KMS and grants access to other accounts
 Parameters:
-  DevAccount:
-    Description: AWS AccountNumber for dev
-    Type: Number
-  TestAccount:
-    Description: AWS AccountNumber for test
-    Type: Number
   ProductionAccount:
     Description: AWS AccountNumber for production
     Type: Number
@@ -63,8 +57,6 @@ Resources:
             Principal:
               AWS:
                 - !Sub arn:aws:iam::${ProductionAccount}:root
-                - !Sub arn:aws:iam::${TestAccount}:root
-                - !Sub arn:aws:iam::${DevAccount}:root
                 - !If
                   - AddCodeBuildResource
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/${ProjectName}-CodeBuildRole
