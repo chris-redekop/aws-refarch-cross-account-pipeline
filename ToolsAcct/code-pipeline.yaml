@@ -16,12 +16,6 @@ Parameters:
   S3Bucket:
     Description: S3 Bucket, which will hold the artifacts
     Type: String
-  DevAccount:
-    Description: AWS AccountNumber for dev
-    Type: Number
-  TestAccount:
-    Description: AWS AccountNumber for test
-    Type: Number
   ProductionAccount:
     Description: AWS AccountNumber for production
     Type: Number
@@ -197,9 +191,7 @@ Resources:
             Action:
               - sts:AssumeRole
             Resource:
-              - !Sub arn:aws:iam::${DevAccount}:role/ToolsAcctCodePipelineCodeCommitRole
               - !Sub arn:aws:iam::${ProductionAccount}:role/ToolsAcctCodePipelineCloudFormationRole
-              - !Sub arn:aws:iam::${TestAccount}:role/ToolsAcctCodePipelineCloudFormationRole
 
       Roles:
         -
@@ -224,12 +216,6 @@ Resources:
               OutputArtifacts:
                 - Name: SCCheckoutArtifact
               RunOrder: 1
-              #RoleArn: !Sub arn:aws:iam::${DevAccount}:role/ToolsAcctCodePipelineCodeCommitRole
-              RoleArn:
-                  Fn::If:
-                  - AddCodeBuildResource
-                  - !Sub arn:aws:iam::${DevAccount}:role/ToolsAcctCodePipelineCodeCommitRole
-                  - !Ref AWS::NoValue
         -
           Name: Build
           Actions:
@@ -248,60 +234,6 @@ Resources:
             OutputArtifacts:
               - Name: BuildOutput
             #REMOVE:RoleArn: arn:aws:iam::485873893626:role/ToolsAcctCodePipelineCodeCommitRole
-        - Name: DeployToTest
-          Actions:
-            - Name: CreateChangeSetTest
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Version: 1
-                Provider: CloudFormation
-              Configuration:
-                ChangeSetName: sample-lambda-dev
-                ActionMode: CHANGE_SET_REPLACE
-                StackName: sample-lambda-dev
-                Capabilities: CAPABILITY_NAMED_IAM
-                TemplatePath: BuildOutput::samtemplate.yaml
-                #RoleArn: !Sub arn:aws:iam::${TestAccount}:role/cloudformationdeployer-role
-                RoleArn:
-                  Fn::If:
-                  - AddCodeBuildResource
-                  - !Sub arn:aws:iam::${TestAccount}:role/cloudformationdeployer-role
-                  - !Ref AWS::NoValue
-              InputArtifacts:
-                - Name: BuildOutput
-              RunOrder: 1
-              #RoleArn: !Sub arn:aws:iam::${TestAccount}:role/ToolsAcctCodePipelineCloudFormationRole
-              RoleArn:
-                  Fn::If:
-                  - AddCodeBuildResource
-                  - !Sub arn:aws:iam::${TestAccount}:role/ToolsAcctCodePipelineCloudFormationRole
-                  - !Ref AWS::NoValue
-            - Name: DeployChangeSetTest
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Version: 1
-                Provider: CloudFormation
-              Configuration:
-                ChangeSetName: sample-lambda-dev
-                ActionMode: CHANGE_SET_EXECUTE
-                StackName: sample-lambda-dev
-                #RoleArn: !Sub arn:aws:iam::${TestAccount}:role/cloudformationdeployer-role
-                RoleArn:
-                  Fn::If:
-                  - AddCodeBuildResource
-                  - !Sub arn:aws:iam::${TestAccount}:role/cloudformationdeployer-role
-                  - !Ref AWS::NoValue
-              InputArtifacts:
-                - Name: BuildOutput
-              RunOrder: 2
-              #RoleArn: !Sub arn:aws:iam::${TestAccount}:role/ToolsAcctCodePipelineCloudFormationRole
-              RoleArn:
-                  Fn::If:
-                  - AddCodeBuildResource
-                  - !Sub arn:aws:iam::${TestAccount}:role/ToolsAcctCodePipelineCloudFormationRole
-                  - !Ref AWS::NoValue
         - Name: DeployToProduction
           Actions:
             - Name: CreateChangeSetProd
@@ -378,9 +310,6 @@ Resources:
               - !Sub arn:aws:s3:::${S3Bucket}/*
             Principal:
               AWS:
-                - !Sub arn:aws:iam::${DevAccount}:role/ToolsAcctCodePipelineCodeCommitRole
-                - !Sub arn:aws:iam::${TestAccount}:role/ToolsAcctCodePipelineCloudFormationRole
-                - !Sub arn:aws:iam::${TestAccount}:role/cloudformationdeployer-role
                 - !Sub arn:aws:iam::${ProductionAccount}:role/ToolsAcctCodePipelineCloudFormationRole
                 - !Sub arn:aws:iam::${ProductionAccount}:role/cloudformationdeployer-role
                 - !GetAtt [BuildProjectRole,Arn]
@@ -411,3 +340,9 @@ Resources:
       Roles:
         -
           !Ref PipeLineRole
+
+  Repository:
+    Type: AWS::CodeCommit::Repository
+    DeletionPolicy: Retain
+    Properties:
+      RepositoryName: !Ref ProjectName
