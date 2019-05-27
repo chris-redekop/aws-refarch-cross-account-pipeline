@@ -310,6 +310,7 @@ Resources:
               - !Sub arn:aws:s3:::${S3Bucket}/*
             Principal:
               AWS:
+                - !GetAtt PipeLineRole.Arn
                 - !Sub arn:aws:iam::${ProductionAccount}:role/ToolsAcctCodePipelineCloudFormationRole
                 - !Sub arn:aws:iam::${ProductionAccount}:role/cloudformationdeployer-role
                 - !GetAtt [BuildProjectRole,Arn]
