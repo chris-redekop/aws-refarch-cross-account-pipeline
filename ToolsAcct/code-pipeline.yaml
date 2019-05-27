@@ -384,3 +384,30 @@ Resources:
                 - !Sub arn:aws:iam::${ProductionAccount}:role/ToolsAcctCodePipelineCloudFormationRole
                 - !Sub arn:aws:iam::${ProductionAccount}:role/cloudformationdeployer-role
                 - !GetAtt [BuildProjectRole,Arn]
+
+  Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ToolsAcctCodePipelineCodeCommitPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Action:
+              - codecommit:BatchGetRepositories
+              - codecommit:Get*
+              - codecommit:GitPull
+              - codecommit:List*
+              - codecommit:CancelUploadArchive
+              - codecommit:UploadArchive
+              - s3:*
+            Resource: "*"
+          -
+            Effect: Allow
+            Action:
+              - kms:*
+            Resource: !Ref CMKARN
+      Roles:
+        -
+          !Ref PipeLineRole
